@@ -50,18 +50,24 @@ async function run(octokit, context, token) {
 	const buildScript = getInput('build-script') || 'build';
 	const cwd = process.cwd();
 
-	let yarnLock = await fileExists(path.resolve(cwd, 'yarn.lock'));
+	const yarnLock = await fileExists(path.resolve(cwd, 'yarn.lock'));
 	const isYarn2 = yarnLock ? await patternExistsInFile(/__metadata:/, path.resolve(cwd, 'yarn.lock')) : false;
-	let packageLock = await fileExists(path.resolve(cwd, 'package-lock.json'));
+	const pnpmLock = await fileExists(path.resolve(cwd, 'pnpm-lock.yaml'));
+	const packageLock = await fileExists(path.resolve(cwd, 'package-lock.json'));
 
 	let npm = `npm`;
 	let installScript = `npm install`;
+
 	if (isYarn2) {
 		npm = `yarn`
 		installScript = `yarn install --immutable`
 	} else if (yarnLock) {
 		npm = `yarn`
 		installScript = `yarn --frozen-lockfile`;
+	}
+	else if (pnpmLock) {
+		npm = `pnpm`
+		installScript = `pnpm install --frozen-lockfile`
 	}
 	else if (packageLock) {
 		installScript = `npm ci`;
@@ -120,16 +126,6 @@ async function run(octokit, context, token) {
 	}
 
 	startGroup(`[base] Install Dependencies`);
-
-	yarnLock = await fileExists(path.resolve(cwd, 'yarn.lock'));
-	packageLock = await fileExists(path.resolve(cwd, 'package-lock.json'));
-	
-	if (yarnLock) {
-		installScript = npm = `yarn --frozen-lockfile`;
-	}
-	else if (packageLock) {
-		installScript = `npm ci`;
-	}
 
 	console.log(`Installing using ${installScript}`)
 	await exec(installScript);
