@@ -3,7 +3,7 @@ import { getInput, setFailed, startGroup, endGroup, debug } from '@actions/core'
 import { context, getOctokit } from '@actions/github';
 import { exec } from '@actions/exec';
 import SizePlugin from 'size-plugin-core';
-import { fileExists, diffTable, toBool, stripHash } from './utils.js';
+import { fileExists, patternExistsInFile, diffTable, toBool, stripHash } from './utils.js';
 
 /**
  * @typedef {ReturnType<typeof import("@actions/github").getOctokit>} Octokit
@@ -51,12 +51,17 @@ async function run(octokit, context, token) {
 	const cwd = process.cwd();
 
 	let yarnLock = await fileExists(path.resolve(cwd, 'yarn.lock'));
+	const isYarn2 = yarnLock ? await patternExistsInFile(/__metadata:/, path.resolve(cwd, 'yarn.lock')) : false;
 	let packageLock = await fileExists(path.resolve(cwd, 'package-lock.json'));
 
 	let npm = `npm`;
 	let installScript = `npm install`;
-	if (yarnLock) {
-		installScript = npm = `yarn --frozen-lockfile`;
+	if (isYarn2) {
+		npm = `yarn`
+		installScript = `yarn install --immutable`
+	} else if (yarnLock) {
+		npm = `yarn`
+		installScript = `yarn --frozen-lockfile`;
 	}
 	else if (packageLock) {
 		installScript = `npm ci`;
