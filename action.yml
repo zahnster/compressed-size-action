@@ -1,5 +1,5 @@
-name: "compressed-size-action-yarn"
-description: "Get compressed size differences for every PR, now compatable with Yarn 2 & 3"
+name: "compressed-size-action-xpm"
+description: "Get compressed size differences for every PR, now compatable with Yarn 2/3 and PNPM"
 author: "Various Artists"
 branding:
   icon: "archive"
